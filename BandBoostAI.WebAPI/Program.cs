@@ -15,6 +15,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ITokenProvider, JwtTokenProvider>(); // Đăng ký Provider
 builder.Services.AddScoped<IUserRepository, UserRepository>();    
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpClient(); // Cho phép ứng dụng tạo các cuộc gọi HTTP ra internet
+builder.Services.AddScoped<IAiScoringService, AiScoringService>();
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
