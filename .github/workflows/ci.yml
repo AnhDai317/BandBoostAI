@@ -1,0 +1,60 @@
+name: BandBoost AI - CI Pipeline
+
+# Kích hoạt luồng này mỗi khi có code push lên nhánh main hoặc tạo Pull Request
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ----------------------------------------
+  # JOB 1: KIỂM TRA BACKEND (.NET)
+  # ----------------------------------------
+  build-backend:
+    runs-on: ubuntu-latest # Chạy trên máy chủ ảo Linux của GitHub
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore BandBoostAI.sln
+
+    - name: Build Backend
+      run: dotnet build BandBoostAI.sln --configuration Release --no-restore
+
+    # Sau này nếu bạn viết Unit Test, chỉ cần mở comment dòng dưới này:
+    # - name: Run Unit Tests
+    #   run: dotnet test BandBoostAI.sln --configuration Release --no-build
+
+  # ----------------------------------------
+  # JOB 2: KIỂM TRA FRONTEND (REACT/VITE)
+  # ----------------------------------------
+  build-frontend:
+    runs-on: ubuntu-latest
+    
+    # Chỉ định thư mục chạy lệnh là bandboost-web
+    defaults:
+      run:
+        working-directory: ./bandboost-web
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x' # Khớp với phiên bản máy bạn đang dùng
+
+    - name: Install NPM Packages
+      run: npm install
+
+    - name: Build Frontend
+      run: npm run build
