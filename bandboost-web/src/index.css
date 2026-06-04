@@ -4,6 +4,6 @@
 
 @layer base {
   body {
-    @apply bg-background text-on-surface antialiased min-h-screen flex flex-col;
+    @apply bg-[#0b1326] text-[#dae2fd] antialiased min-h-screen flex flex-col overflow-x-hidden;
   }
 }

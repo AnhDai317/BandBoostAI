@@ -34,14 +34,34 @@ const Register = () => {
 
         setIsLoading(true);
 
-        // Chỗ này sau này sẽ gọi hàm từ folder src/services/authService.js
-        console.log("Dữ liệu gửi đi:", formData);
+        // Gọi API backend thay vì giả lập
+        try {
+            const response = await fetch("http://localhost:5229/api/Auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    password: formData.password
+                })
+            });
 
-        setTimeout(() => {
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("Đăng ký thành công!");
+                // Chuyển hướng sang trang đăng nhập (có thể dùng useNavigate)
+            } else {
+                setErrorMsg(data.message || "Đăng ký thất bại");
+            }
+        } catch (error) {
+            console.error("Lỗi đăng ký:", error);
+            setErrorMsg("Không thể kết nối đến máy chủ.");
+        } finally {
             setIsLoading(false);
-            // Giả lập lỗi để test UI
-            // setErrorMsg("Email này đã được đăng ký!"); 
-        }, 1500);
+        }
     };
 
     return (

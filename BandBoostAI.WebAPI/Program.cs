@@ -35,8 +35,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
+app.UseCors("AllowAll");
 app.UseAuthentication(); // Bật kiểm tra Hộ chiếu (Token)
 app.UseAuthorization();  // Bật kiểm tra Phân quyền (Role)
 // Configure the HTTP request pipeline.

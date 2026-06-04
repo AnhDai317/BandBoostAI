@@ -1,7 +1,9 @@
 using BandBoostAI.Application.DTOs.Auth;
 using BandBoostAI.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 namespace BandBoostAI.WebAPI.Controllers;
 
 [Route("api/[controller]")]
@@ -52,5 +54,27 @@ public class AuthController : ControllerBase
         }
 
         return Ok(result); // Trả về Token kèm thông tin
+    }
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult GetMe()
+    {
+        // Bóc tách thông tin từ Token (Claims) mà không cần gọi Database
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
+        var fullName = User.FindFirst("FullName")?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new
+        {
+            message = "🎉 Chúc mừng! Bạn đã vượt qua Trạm gác JWT thành công!",
+            user = new 
+            {
+                Id = userId,
+                FullName = fullName,
+                Email = email,
+                Role = role
+            }
+        });
     }
 }

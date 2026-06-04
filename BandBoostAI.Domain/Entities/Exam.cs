@@ -5,8 +5,10 @@ namespace BandBoostAI.Domain.Entities;
 public class Exam : BaseEntity
 {
     public required string Title { get; set; }
-    public int DurationInMinutes { get; set; }
-    
-    // Navigation Property: 1 Đề thi có nhiều Câu hỏi
-    public ICollection<Question> Questions { get; set; } = new List<Question>();
+ public SkillCategory Category { get; set; } 
+    public int DurationInMinutes { get; set; } 
+    public bool IsPremium { get; set; } 
+
+    public virtual ICollection<ExamSection> Sections { get; set; } = new List<ExamSection>();
+
 }

@@ -11,6 +11,7 @@ public class ApplicationDbContext : DbContext
     // Khai báo các bảng trong Database
     public DbSet<User> Users => Set<User>();
     public DbSet<Exam> Exams => Set<Exam>();
+    public DbSet<ExamSection> ExamSections => Set<ExamSection>();
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<AiEvaluation> AiEvaluations => Set<AiEvaluation>();
 
@@ -22,6 +23,7 @@ public class ApplicationDbContext : DbContext
         // Khi query db.Users.ToList(), EF Core sẽ tự động gắn thêm điều kiện: WHERE IsDeleted = 0
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Exam>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<ExamSection>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Question>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<AiEvaluation>().HasQueryFilter(e => !e.IsDeleted);
 

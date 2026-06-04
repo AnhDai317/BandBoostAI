@@ -1,12 +1,15 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Register from './pages/Register';
+import Home from './pages/Home'; // Import thêm trang Home
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Mặc định vào thẳng trang Register để code cho tiện */}
-        <Route path="/" element={<Navigate to="/register" />} />
+        {/* Khi gõ localhost:5173/ thì vào Home */}
+        <Route path="/" element={<Home />} />
+
+        {/* Khi gõ localhost:5173/register hoặc bấm nút từ Home thì sang đây */}
         <Route path="/register" element={<Register />} />
       </Routes>
     </Router>
