@@ -18,7 +18,24 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExamRepository, ExamRepository>();
 builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IExamAttemptRepository, ExamAttemptRepository>();
+builder.Services.AddScoped<ILearningRepository, LearningRepository>();
+builder.Services.AddScoped<ILearningService, LearningService>();
 builder.Services.AddHttpClient(); // Cho phép ứng dụng tạo các cuộc gọi HTTP ra internet
+builder.Services.AddHttpClient<IDictionaryLookupService, DictionaryLookupService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.dictionaryapi.dev/");
+    client.Timeout = TimeSpan.FromSeconds(6);
+});
+builder.Services.AddHttpClient<IWordDiscoveryService, WordDiscoveryService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.datamuse.com/");
+    client.Timeout = TimeSpan.FromSeconds(6);
+});
+builder.Services.AddHttpClient<ITranslationService, TranslationService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.mymemory.translated.net/");
+    client.Timeout = TimeSpan.FromSeconds(6);
+});
 builder.Services.AddScoped<IAiScoringService, AiScoringService>();
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -26,6 +43,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Keep JWT claim names such as "sub" and "email" unchanged.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -67,6 +86,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await context.Database.MigrateAsync();
     await DbSeeder.SeedAsync(context);
 }
 

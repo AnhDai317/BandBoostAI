@@ -1,267 +1,156 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import LearningShell from "../../components/LearningShell";
+import { apiRequest } from "../../services/api";
+
+const levelNames = { 1: "A1", 2: "A2", 3: "B1", 4: "B2", 5: "C1", 6: "C2" };
+const goalNames = { 1: "Tiếng Anh tổng quát", 2: "IELTS", 3: "Giao tiếp", 4: "Sự nghiệp", 5: "Du lịch", 6: "Du học" };
+const categoryNames = { 1: "Reading", 2: "Listening", 3: "Writing", 4: "Speaking" };
+const categoryStyles = {
+    1: "border-sky-400/20 bg-sky-400/10 text-sky-300",
+    2: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+    3: "border-amber-400/20 bg-amber-400/10 text-amber-300",
+    4: "border-rose-400/20 bg-rose-400/10 text-rose-300"
+};
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const [dashboard, setDashboard] = useState(null);
     const [exams, setExams] = useState([]);
     const [attempts, setAttempts] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const userData = localStorage.getItem("user");
-        if (!token || !userData) {
+        if (!localStorage.getItem("token")) {
             navigate("/register");
             return;
         }
 
-        setUser(JSON.parse(userData));
-
-        // Fetch data
-        const fetchData = async () => {
-            try {
-                // Fetch Exams
-                const examsRes = await fetch("http://localhost:5229/api/Exams", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                const examsData = await examsRes.json();
-                setExams(examsData);
-
-                // Fetch User Attempts
-                const attemptsRes = await fetch("http://localhost:5229/api/Exams/my-attempts", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                if (attemptsRes.ok) {
-                    const attemptsData = await attemptsRes.json();
-                    setAttempts(attemptsData);
+        Promise.all([
+            apiRequest("/Learning/dashboard"),
+            apiRequest("/Exams"),
+            apiRequest("/Exams/my-attempts")
+        ])
+            .then(([learningData, examData, attemptData]) => {
+                if (learningData.requiresOnboarding) {
+                    navigate("/onboarding", { replace: true });
+                    return;
                 }
-            } catch (err) {
-                console.error("Lỗi tải dữ liệu:", err);
-                setError("Không thể đồng bộ dữ liệu từ hệ thống.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchData();
+                setDashboard(learningData);
+                setExams(examData);
+                setAttempts(attemptData);
+            })
+            .catch(err => {
+                if (err.status === 401) navigate("/register");
+                else setError(err.message);
+            })
+            .finally(() => setLoading(false));
     }, [navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/");
-    };
+    const firstName = user.fullName?.trim().split(" ").pop() || "bạn";
+    const dateLabel = new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "2-digit", month: "long" }).format(new Date());
+    const todayProgress = useMemo(() => dashboard ? Math.min(100, Math.round(dashboard.stats.todayMinutes / Math.max(1, dashboard.stats.dailyMinutesTarget) * 100)) : 0, [dashboard]);
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center text-white">
-                <svg className="animate-spin h-10 w-10 text-violet-500 mb-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <p className="text-slate-400 font-medium">Đang tải thông tin bảng điều khiển...</p>
-            </div>
-        );
+    if (loading || !dashboard) {
+        return <div className="grid min-h-screen place-items-center bg-[#080d1b] text-violet-300"><div className="text-center"><span className="material-symbols-outlined animate-spin text-5xl">progress_activity</span><p className="mt-3 text-sm font-semibold text-slate-500">Đang chuẩn bị lộ trình hôm nay...</p>{error && <p className="mt-3 text-rose-300">{error}</p>}</div></div>;
     }
 
-    // Get category badge style
-    const getCategoryStyle = (category) => {
-        switch (category) {
-            case 1: return "bg-sky-500/10 text-sky-400 border-sky-500/20"; // Reading
-            case 2: return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"; // Listening
-            case 3: return "bg-amber-500/10 text-amber-400 border-amber-500/20"; // Writing
-            case 4: return "bg-rose-500/10 text-rose-400 border-rose-500/20"; // Speaking
-            default: return "bg-slate-500/10 text-slate-400 border-slate-500/20";
-        }
-    };
-
-    const getCategoryName = (category) => {
-        switch (category) {
-            case 1: return "Reading";
-            case 2: return "Listening";
-            case 3: return "Writing";
-            case 4: return "Speaking";
-            default: return "General";
-        }
-    };
-
-    // Calculate current band (highest or latest)
-    const latestAttempt = attempts[0];
-    const currentBand = latestAttempt ? parseFloat(latestAttempt.score).toFixed(1) : "0.0";
-    const targetBand = "7.5"; // Hardcoded mockup for target
+    const { profile, stats, todayPlan, milestones, recommendedTopics } = dashboard;
+    const targetTitle = profile.primaryGoal === 2 ? `IELTS ${Number(profile.targetBandScore).toFixed(1)}` : `${levelNames[profile.targetLevel]} · ${goalNames[profile.primaryGoal]}`;
+    const daysToTarget = profile.targetDate ? Math.max(0, Math.ceil((new Date(profile.targetDate) - new Date()) / 86400000)) : null;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-            {/* Header */}
-            <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl font-black bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-                            BandBoost AI
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        <div className="hidden sm:flex flex-col text-right">
-                            <span className="font-bold text-sm text-slate-200">{user?.fullName}</span>
-                            <span className="text-xs text-slate-400">{user?.email}</span>
+        <LearningShell>
+            {error && <div className="mb-6 flex items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-300"><span className="material-symbols-outlined">error</span>{error}</div>}
+
+            <section className="relative mb-8 overflow-hidden rounded-[2rem] border border-violet-400/15 bg-gradient-to-br from-violet-950/70 via-slate-900 to-indigo-950/70 p-7 md:p-10">
+                <div className="pointer-events-none absolute -right-16 -top-28 h-80 w-80 rounded-full bg-violet-500/20 blur-3xl" />
+                <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+                    <div>
+                        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400"><span className="capitalize">{dateLabel}</span><span className="h-1 w-1 rounded-full bg-slate-600" /><span>{stats.currentStreak > 0 ? `🔥 ${stats.currentStreak} ngày liên tiếp` : "Bắt đầu streak hôm nay"}</span></div>
+                        <h1 className="text-3xl font-black leading-tight tracking-tight md:text-5xl">Chào {firstName},<br /><span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">tiếp tục tiến bộ nhé!</span></h1>
+                        <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 md:text-base">Lộ trình hôm nay được cá nhân hóa cho trình độ <strong className="text-slate-200">{levelNames[profile.currentLevel]}</strong> và mục tiêu <strong className="text-slate-200">{targetTitle}</strong>.</p>
+                        <div className="mt-6 flex flex-wrap gap-3">
+                            <Link to={todayPlan.find(task => !task.isCompleted)?.route || "/vocabulary"} className="flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-bold text-slate-950 shadow-lg transition hover:-translate-y-0.5"><span className="material-symbols-outlined">play_arrow</span>Tiếp tục học</Link>
+                            <Link to="/onboarding" className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/10"><span className="material-symbols-outlined text-lg">tune</span>Điều chỉnh mục tiêu</Link>
                         </div>
-                        <button
-                            onClick={handleLogout}
-                            className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 border border-slate-800 rounded-xl hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
-                        >
-                            <span className="material-symbols-outlined text-sm">logout</span> Đăng xuất
-                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-6 rounded-3xl border border-white/10 bg-black/20 p-5 backdrop-blur md:min-w-[310px]">
+                        <div className="relative grid h-28 w-28 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#a78bfa ${todayProgress * 3.6}deg, rgba(255,255,255,.08) 0deg)` }}>
+                            <div className="grid h-[90px] w-[90px] place-items-center rounded-full bg-[#131526] text-center"><div><strong className="text-2xl">{todayProgress}%</strong><p className="text-[10px] text-slate-500">Hôm nay</p></div></div>
+                        </div>
+                        <div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Mục tiêu ngày</p><p className="mt-2 text-2xl font-black">{stats.todayMinutes}<span className="text-sm text-slate-500">/{stats.dailyMinutesTarget} phút</span></p><p className="mt-2 text-xs leading-5 text-slate-500">{todayProgress >= 100 ? "Bạn đã hoàn thành kế hoạch hôm nay!" : `Còn ${Math.max(0, stats.dailyMinutesTarget - stats.todayMinutes)} phút để hoàn thành.`}</p></div>
                     </div>
                 </div>
-            </header>
+            </section>
 
-            {/* Dashboard Content */}
-            <main className="flex-1 max-w-7xl mx-auto w-full p-6 space-y-10">
-                {/* Error Banner */}
-                {error && (
-                    <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-2xl flex items-center gap-3">
-                        <span className="material-symbols-outlined">report</span>
-                        <p className="text-sm font-semibold">{error}</p>
-                    </div>
-                )}
+            <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+                {[
+                    { label: "Streak hiện tại", value: stats.currentStreak, suffix: " ngày", icon: "local_fire_department", color: "text-orange-300", bg: "bg-orange-400/10" },
+                    { label: "Từ đã học", value: stats.wordsStarted, suffix: ` · ${stats.wordsMastered} thành thạo`, icon: "spellcheck", color: "text-emerald-300", bg: "bg-emerald-400/10" },
+                    { label: "Nhịp học tuần", value: stats.activeDaysThisWeek, suffix: `/${stats.weeklyGoalDays} ngày`, icon: "calendar_month", color: "text-cyan-300", bg: "bg-cyan-400/10" },
+                    { label: "Điểm kinh nghiệm", value: stats.experiencePoints, suffix: " XP", icon: "bolt", color: "text-amber-300", bg: "bg-amber-400/10" }
+                ].map(item => <div key={item.label} className="rounded-2xl border border-white/[.08] bg-white/[.035] p-4 md:p-5"><div className="flex items-center gap-3"><span className={`grid h-10 w-10 place-items-center rounded-xl ${item.bg} ${item.color}`}><span className="material-symbols-outlined">{item.icon}</span></span><div><p className="text-xs text-slate-500">{item.label}</p><p className="mt-1 text-xl font-black text-white">{item.value}<span className="text-xs font-semibold text-slate-500">{item.suffix}</span></p></div></div></div>)}
+            </section>
 
-                {/* Banner / Welcome */}
-                <section className="bg-gradient-to-r from-violet-900/40 via-indigo-900/40 to-slate-900 border border-violet-500/20 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-xl">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent"></div>
-                    <div className="z-10 space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
-                            <span className="w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
-                            <span className="text-xs font-bold uppercase tracking-widest text-violet-300">IELTS Preparation Hub</span>
+            <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+                <div className="space-y-9">
+                    <section>
+                        <div className="mb-5 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-violet-400">Kế hoạch cá nhân</p><h2 className="mt-2 text-2xl font-black">Hôm nay học gì?</h2></div><span className="text-xs text-slate-500">{todayPlan.filter(task => task.isCompleted).length}/{todayPlan.length} hoàn thành</span></div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {todayPlan.map((task, taskIndex) => (
+                                <Link key={task.title} to={task.route} className={`group relative overflow-hidden rounded-3xl border p-6 transition hover:-translate-y-1 ${task.isCompleted ? "border-emerald-400/20 bg-emerald-400/[.05]" : "border-white/10 bg-white/[.035] hover:border-violet-400/30"}`}>
+                                    <div className="flex items-start justify-between"><span className={`grid h-12 w-12 place-items-center rounded-2xl ${taskIndex === 0 ? "bg-violet-500/15 text-violet-300" : "bg-cyan-400/10 text-cyan-300"}`}><span className="material-symbols-outlined">{task.isCompleted ? "check" : task.icon}</span></span><span className="rounded-full bg-white/5 px-3 py-1 text-[11px] font-semibold text-slate-500">~{task.estimatedMinutes} phút</span></div>
+                                    <h3 className="mt-5 text-lg font-bold group-hover:text-violet-300">{task.title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{task.description}</p>
+                                    <div className="mt-5 flex items-center gap-1 text-xs font-bold text-violet-300">{task.isCompleted ? "Đã hoàn thành" : "Bắt đầu ngay"}<span className="material-symbols-outlined text-base">arrow_forward</span></div>
+                                </Link>
+                            ))}
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white leading-tight">
-                            Chào mừng trở lại,<br/>
-                            <span className="bg-gradient-to-r from-violet-300 to-indigo-300 bg-clip-text text-transparent">{user?.fullName}</span>!
-                        </h2>
-                        <p className="text-slate-400 font-light max-w-lg">
-                            Hệ thống AI đã cập nhật điểm thi thử của bạn. Hãy chọn một bài luyện tập mới bên dưới để tiếp tục nâng band điểm.
-                        </p>
-                    </div>
+                    </section>
 
-                    {/* Stats */}
-                    <div className="z-10 flex gap-6 sm:gap-10">
-                        <div className="bg-slate-900/80 backdrop-blur border border-slate-800 p-6 rounded-3xl w-32 sm:w-40 text-center shadow-lg">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Hiện Tại</p>
-                            <p className="text-4xl sm:text-5xl font-black mt-2 bg-gradient-to-br from-violet-400 to-indigo-400 bg-clip-text text-transparent">{currentBand}</p>
-                            <p className="text-[10px] text-slate-500 mt-1">IELTS Band</p>
+                    <section>
+                        <div className="mb-5 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-400">Học theo sở thích</p><h2 className="mt-2 text-2xl font-black">Chủ đề dành cho bạn</h2></div><Link to="/vocabulary" className="text-xs font-bold text-slate-400 hover:text-white">Xem tất cả →</Link></div>
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            {recommendedTopics.map((topic, topicIndex) => {
+                                const progress = topic.wordCount ? Math.round(topic.masteredCount / topic.wordCount * 100) : 0;
+                                const colors = ["from-violet-600/25 to-fuchsia-600/5 text-violet-300", "from-cyan-600/20 to-blue-600/5 text-cyan-300", "from-emerald-600/20 to-teal-600/5 text-emerald-300"];
+                                return <Link key={topic.id} to={`/vocabulary?topic=${topic.slug}&level=${profile.currentLevel}`} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${colors[topicIndex]} p-5 transition hover:-translate-y-1 hover:border-white/20`}><span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><span className="material-symbols-outlined">{topic.icon}</span></span><h3 className="mt-5 font-bold text-white">{topic.name}</h3><p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{topic.description}</p><div className="mt-5 flex items-center justify-between text-[11px] text-slate-500"><span>{topic.masteredCount}/{topic.wordCount} từ</span><strong>{progress}%</strong></div><div className="mt-2 h-1.5 rounded-full bg-black/20"><div className="h-full rounded-full bg-current" style={{ width: `${progress}%` }} /></div></Link>;
+                            })}
                         </div>
-                        <div className="bg-slate-900/80 backdrop-blur border border-slate-800 p-6 rounded-3xl w-32 sm:w-40 text-center shadow-lg">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Mục Tiêu</p>
-                            <p className="text-4xl sm:text-5xl font-black mt-2 text-indigo-400">{targetBand}</p>
-                            <p className="text-[10px] text-slate-500 mt-1">IELTS Band</p>
+                    </section>
+
+                    <section id="practice" className="scroll-mt-24">
+                        <div className="mb-5"><p className="text-xs font-bold uppercase tracking-[.18em] text-amber-400">Luyện tập có phản hồi</p><h2 className="mt-2 text-2xl font-black">Bài luyện phù hợp</h2></div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {exams.map(exam => <article key={exam.id} className="rounded-3xl border border-white/10 bg-white/[.035] p-5 transition hover:border-white/20"><div className="flex items-center justify-between"><span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${categoryStyles[exam.category] || "border-white/10 text-slate-400"}`}>{categoryNames[exam.category] || "General"}</span><span className="flex items-center gap-1 text-xs text-slate-500"><span className="material-symbols-outlined text-base">schedule</span>{exam.durationInMinutes} phút</span></div><h3 className="mt-5 font-bold leading-6 text-slate-100">{exam.title}</h3><p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{exam.description}</p><Link to={`/exam/${exam.id}`} className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-3 text-sm font-bold transition hover:bg-violet-600">Làm bài <span className="material-symbols-outlined text-lg">arrow_forward</span></Link></article>)}
                         </div>
-                    </div>
-                </section>
-
-                <div className="grid lg:grid-cols-3 gap-10">
-                    {/* Left 2 cols: Exams List */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-violet-400">assignment</span>
-                                Danh sách Đề Thi Thử ({exams.length})
-                            </h3>
-                        </div>
-
-                        {exams.length === 0 ? (
-                            <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-12 text-center text-slate-500">
-                                <span className="material-symbols-outlined text-4xl mb-2">inbox</span>
-                                <p>Chưa có đề thi nào được tạo trên hệ thống.</p>
-                            </div>
-                        ) : (
-                            <div className="grid sm:grid-cols-2 gap-6">
-                                {exams.map((exam) => (
-                                    <div
-                                        key={exam.id}
-                                        className="bg-slate-900/40 hover:bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between group shadow-sm hover:shadow-md"
-                                    >
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getCategoryStyle(exam.category)}`}>
-                                                    {getCategoryName(exam.category)}
-                                                </span>
-                                                <span className="text-xs text-slate-400 flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-sm">schedule</span>
-                                                    {exam.durationInMinutes} phút
-                                                </span>
-                                            </div>
-                                            <h4 className="font-bold text-lg text-slate-100 group-hover:text-violet-400 transition-colors leading-snug">
-                                                {exam.title}
-                                            </h4>
-                                            <p className="text-sm text-slate-400 font-light line-clamp-2">
-                                                {exam.description || "Bài thi IELTS mô phỏng độ chính xác cao."}
-                                            </p>
-                                        </div>
-                                        <div className="pt-6 border-t border-slate-800/60 mt-6 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mức độ: Free</span>
-                                            <Link
-                                                to={`/exam/${exam.id}`}
-                                                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1"
-                                            >
-                                                Làm bài <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right col: Attempts History */}
-                    <div className="space-y-6">
-                        <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                            <span className="material-symbols-outlined text-indigo-400">history</span>
-                            Lịch Sử Làm Bài
-                        </h3>
-
-                        {attempts.length === 0 ? (
-                            <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-8 text-center text-slate-500 text-sm">
-                                Bạn chưa tham gia bài thi thử nào. Hãy làm một bài thi ở cột bên trái để bắt đầu!
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {attempts.map((attempt) => (
-                                    <div
-                                        key={attempt.id}
-                                        className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-3 hover:bg-slate-900/70 transition-all"
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <h4 className="font-bold text-sm text-slate-200 line-clamp-1 leading-snug">
-                                                {attempt.examTitle}
-                                            </h4>
-                                            <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-xs font-black">
-                                                {parseFloat(attempt.score).toFixed(1)}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs text-slate-400">
-                                            <span>
-                                                {new Date(attempt.createdAt).toLocaleDateString("vi-VN", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric"
-                                                })}
-                                            </span>
-                                            <Link
-                                                to={`/feedback/${attempt.id}`}
-                                                className="text-violet-400 hover:text-violet-300 font-bold hover:underline flex items-center gap-0.5"
-                                            >
-                                                Xem nhận xét <span className="material-symbols-outlined text-xs">arrow_right</span>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    </section>
                 </div>
-            </main>
-        </div>
+
+                <aside className="space-y-7">
+                    <section className="rounded-3xl border border-white/10 bg-white/[.035] p-6">
+                        <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Đích đến</p><h2 className="mt-2 text-2xl font-black text-white">{targetTitle}</h2></div><span className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-400/10 text-amber-300"><span className="material-symbols-outlined">flag</span></span></div>
+                        <div className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-2xl bg-slate-900/70 p-4"><p className="text-[11px] text-slate-500">Hiện tại</p><strong className="mt-1 block text-xl">{profile.primaryGoal === 2 && profile.currentBandScore ? Number(profile.currentBandScore).toFixed(1) : levelNames[profile.currentLevel]}</strong></div><div className="rounded-2xl bg-slate-900/70 p-4"><p className="text-[11px] text-slate-500">Còn lại</p><strong className="mt-1 block text-xl">{daysToTarget !== null ? `${daysToTarget} ngày` : "Chưa đặt"}</strong></div></div>
+                    </section>
+
+                    <section className="rounded-3xl border border-white/10 bg-white/[.035] p-6">
+                        <div className="mb-6 flex items-center justify-between"><h2 className="font-bold">Các cột mốc</h2><span className="material-symbols-outlined text-slate-600">route</span></div>
+                        <div className="space-y-6">
+                            {milestones.map((milestone, milestoneIndex) => <div key={milestone.title} className="relative pl-9">{milestoneIndex < milestones.length - 1 && <span className="absolute left-[11px] top-7 h-[calc(100%+12px)] w-px bg-slate-800" />}<span className={`absolute left-0 top-0 grid h-6 w-6 place-items-center rounded-full border text-[10px] font-black ${milestone.status === "completed" ? "border-emerald-400 bg-emerald-400 text-emerald-950" : milestone.status === "in_progress" ? "border-violet-400 bg-violet-500/20 text-violet-300" : "border-slate-700 bg-slate-900 text-slate-500"}`}>{milestone.status === "completed" ? <span className="material-symbols-outlined text-sm">check</span> : milestoneIndex + 1}</span><div className="flex justify-between gap-3"><h3 className="text-sm font-bold text-slate-200">{milestone.title}</h3><span className="text-xs font-bold text-slate-500">{milestone.progressPercent}%</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{milestone.description}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400" style={{ width: `${milestone.progressPercent}%` }} /></div></div>)}
+                        </div>
+                    </section>
+
+                    <section className="rounded-3xl border border-white/10 bg-white/[.035] p-6">
+                        <div className="mb-4 flex items-center justify-between"><h2 className="font-bold">Kết quả gần đây</h2><span className="text-xs text-slate-600">{attempts.length} bài</span></div>
+                        {attempts.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 p-5 text-center text-xs leading-5 text-slate-500">Chưa có kết quả. Hoàn thành bài luyện đầu tiên để AI phân tích điểm mạnh và điểm cần cải thiện.</div> : <div className="space-y-3">{attempts.slice(0, 3).map(attempt => <Link key={attempt.id} to={`/feedback/${attempt.id}`} className="flex items-center gap-3 rounded-2xl bg-slate-900/60 p-3 transition hover:bg-slate-800"><span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/10 font-black text-violet-300">{Number(attempt.score).toFixed(1)}</span><span className="min-w-0 flex-1"><strong className="block truncate text-xs text-slate-300">{attempt.examTitle}</strong><span className="text-[10px] text-slate-600">{new Date(attempt.createdAt).toLocaleDateString("vi-VN")}</span></span><span className="material-symbols-outlined text-lg text-slate-600">chevron_right</span></Link>)}</div>}
+                    </section>
+                </aside>
+            </div>
+            <div className="h-20 md:hidden" />
+        </LearningShell>
     );
 };
 

@@ -46,7 +46,8 @@ public class ExamsController : ControllerBase
     [HttpPost("{id}/submit")]
     public async Task<IActionResult> Submit(Guid id, [FromBody] SubmitExamDto dto)
     {
-        var userIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        var userIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
         {
             return Unauthorized(new { message = "Bạn cần đăng nhập để thực hiện tính năng này." });
@@ -67,7 +68,8 @@ public class ExamsController : ControllerBase
     [HttpGet("my-attempts")]
     public async Task<IActionResult> GetMyAttempts()
     {
-        var userIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        var userIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
         {
             return Unauthorized(new { message = "Bạn cần đăng nhập để thực hiện tính năng này." });

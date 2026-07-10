@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
@@ -156,7 +156,7 @@ const Register = () => {
                                 <input
                                     type="text" id="fullName" name="fullName"
                                     value={formData.fullName} onChange={handleInputChange}
-                                    className={`block w-full px-4 py-3 border rounded-xl focus:ring-4 outline-none transition-all ${errors.fullName ? 'border-rose-500 bg-rose-50/20 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-violet-500/10 focus:border-violet-600'}`}
+                                    className={`block w-full bg-white px-4 py-3 border rounded-xl text-slate-900 caret-violet-600 placeholder:text-slate-400 focus:ring-4 outline-none transition-all ${errors.fullName ? 'border-rose-500 bg-rose-50/20 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-violet-500/10 focus:border-violet-600'}`}
                                     placeholder="Nguyễn Văn A"
                                 />
                                 {errors.fullName && (
@@ -173,7 +173,7 @@ const Register = () => {
                             <input
                                 type="email" id="email" name="email"
                                 value={formData.email} onChange={handleInputChange}
-                                className={`block w-full px-4 py-3 border rounded-xl focus:ring-4 outline-none transition-all ${errors.email ? 'border-rose-500 bg-rose-50/20 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-violet-500/10 focus:border-violet-600'}`}
+                                className={`block w-full bg-white px-4 py-3 border rounded-xl text-slate-900 caret-violet-600 placeholder:text-slate-400 focus:ring-4 outline-none transition-all ${errors.email ? 'border-rose-500 bg-rose-50/20 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-violet-500/10 focus:border-violet-600'}`}
                                 placeholder="name@example.com"
                             />
                             {errors.email && (
@@ -190,7 +190,7 @@ const Register = () => {
                                 <input
                                     type={showPassword ? "text" : "password"} id="password" name="password"
                                     value={formData.password} onChange={handleInputChange}
-                                    className={`block w-full px-4 py-3 border rounded-xl focus:ring-4 outline-none transition-all pr-12 ${errors.password ? 'border-rose-500 bg-rose-50/20 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-violet-500/10 focus:border-violet-600'}`}
+                                    className={`block w-full bg-white px-4 py-3 border rounded-xl text-slate-900 caret-violet-600 placeholder:text-slate-400 focus:ring-4 outline-none transition-all pr-12 ${errors.password ? 'border-rose-500 bg-rose-50/20 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-violet-500/10 focus:border-violet-600'}`}
                                     placeholder="••••••••"
                                 />
                                 <button

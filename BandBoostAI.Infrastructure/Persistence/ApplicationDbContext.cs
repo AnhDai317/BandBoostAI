@@ -15,6 +15,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<AiEvaluation> AiEvaluations => Set<AiEvaluation>();
     public DbSet<ExamAttempt> ExamAttempts => Set<ExamAttempt>();
+    public DbSet<LearningProfile> LearningProfiles => Set<LearningProfile>();
+    public DbSet<VocabularyTopic> VocabularyTopics => Set<VocabularyTopic>();
+    public DbSet<VocabularyWord> VocabularyWords => Set<VocabularyWord>();
+    public DbSet<UserVocabularyProgress> UserVocabularyProgress => Set<UserVocabularyProgress>();
+    public DbSet<LearningActivity> LearningActivities => Set<LearningActivity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,11 +33,67 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Question>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<AiEvaluation>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<ExamAttempt>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<LearningProfile>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<VocabularyTopic>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<VocabularyWord>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<UserVocabularyProgress>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<LearningActivity>().HasQueryFilter(e => !e.IsDeleted);
+
+        modelBuilder.Entity<LearningProfile>()
+            .HasIndex(profile => profile.UserId)
+            .IsUnique();
+
+        modelBuilder.Entity<LearningProfile>()
+            .HasOne(profile => profile.User)
+            .WithOne(user => user.LearningProfile)
+            .HasForeignKey<LearningProfile>(profile => profile.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<VocabularyTopic>()
+            .HasIndex(topic => topic.Slug)
+            .IsUnique();
+
+        modelBuilder.Entity<VocabularyWord>()
+            .HasOne(word => word.Topic)
+            .WithMany(topic => topic.Words)
+            .HasForeignKey(word => word.TopicId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserVocabularyProgress>()
+            .HasIndex(progress => new { progress.UserId, progress.VocabularyWordId })
+            .IsUnique();
+
+        modelBuilder.Entity<UserVocabularyProgress>()
+            .HasOne(progress => progress.User)
+            .WithMany()
+            .HasForeignKey(progress => progress.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserVocabularyProgress>()
+            .HasOne(progress => progress.VocabularyWord)
+            .WithMany()
+            .HasForeignKey(progress => progress.VocabularyWordId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<LearningActivity>()
+            .HasOne(activity => activity.User)
+            .WithMany()
+            .HasForeignKey(activity => activity.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // 2. Ép kiểu cột FeedbackJson của AI lưu trữ chuỗi không giới hạn
         modelBuilder.Entity<AiEvaluation>()
             .Property(e => e.FeedbackJson)
             .HasColumnType("nvarchar(max)");
+
+        modelBuilder.Entity<AiEvaluation>().Property(e => e.TaskResponseScore).HasPrecision(4, 2);
+        modelBuilder.Entity<AiEvaluation>().Property(e => e.CoherenceScore).HasPrecision(4, 2);
+        modelBuilder.Entity<AiEvaluation>().Property(e => e.LexicalScore).HasPrecision(4, 2);
+        modelBuilder.Entity<AiEvaluation>().Property(e => e.GrammarScore).HasPrecision(4, 2);
+        modelBuilder.Entity<AiEvaluation>().Property(e => e.OverallBand).HasPrecision(4, 2);
+        modelBuilder.Entity<ExamAttempt>().Property(e => e.Score).HasPrecision(4, 2);
+        modelBuilder.Entity<User>().Property(e => e.CurrentBandScore).HasPrecision(4, 2);
+        modelBuilder.Entity<User>().Property(e => e.TargetBandScore).HasPrecision(4, 2);
     }
 
     // 3. Tự động can thiệp trước khi lưu xuống Database

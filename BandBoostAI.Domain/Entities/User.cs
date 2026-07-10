@@ -12,4 +12,6 @@ public class User : BaseEntity
 
     public decimal TargetBandScore { get; set; }
     public decimal? CurrentBandScore { get; set; }
+
+    public LearningProfile? LearningProfile { get; set; }
 }

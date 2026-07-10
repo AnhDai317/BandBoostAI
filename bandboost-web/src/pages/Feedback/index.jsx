@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Feedback = () => {
@@ -22,7 +22,7 @@ const Feedback = () => {
                 const res = await fetch(`http://localhost:5229/api/Exams/attempts/${attemptId}`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
-                if (!res.ok) throw new Exception("Không tìm thấy kết quả làm bài.");
+                if (!res.ok) throw new Error("Không tìm thấy kết quả làm bài.");
                 
                 const data = await res.json();
                 setAttempt(data);
@@ -79,7 +79,7 @@ const Feedback = () => {
     let studentAnswers = [];
     try {
         studentAnswers = JSON.parse(attempt.answersJson);
-    } catch(e) {
+    } catch {
         studentAnswers = [];
     }
 

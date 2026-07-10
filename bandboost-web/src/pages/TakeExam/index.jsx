@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const TakeExam = () => {
@@ -28,7 +28,7 @@ const TakeExam = () => {
                 const res = await fetch(`http://localhost:5229/api/Exams/${id}`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
-                if (!res.ok) throw new Exception("Không thể lấy thông tin đề thi.");
+                if (!res.ok) throw new Error("Không thể lấy thông tin đề thi.");
                 
                 const data = await res.json();
                 setExam(data);
@@ -55,66 +55,17 @@ const TakeExam = () => {
         fetchExam();
     }, [id, navigate]);
 
-    // Timer countdown logic
-    useEffect(() => {
-        if (timeLeft <= 0 && exam) {
-            // Auto submit when time runs out
-            handleAutoSubmit();
-            return;
-        }
-
-        if (exam) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-        }
-
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [timeLeft, exam]);
-
-    const handleAnswerChange = (questionId, value) => {
-        setAnswers(prev => ({
-            ...prev,
-            [questionId]: value
-        }));
-    };
-
-    const formatTime = (seconds) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
-
-    const buildPayloadAnswers = () => {
-        return Object.keys(answers).map(qId => ({
-            questionId: qId,
-            answerText: answers[qId]
-        }));
-    };
-
-    const handleAutoSubmit = () => {
-        alert("Hết giờ làm bài! Hệ thống đang tự động nộp bài của bạn.");
-        submitExamAnswers(true);
-    };
-
-    const handleSubmitClick = (e) => {
-        e.preventDefault();
-        if (window.confirm("Bạn có chắc chắn muốn nộp bài thi này không?")) {
-            submitExamAnswers(false);
-        }
-    };
-
-    const submitExamAnswers = async (isAuto = false) => {
+    const submitExamAnswers = useCallback(async () => {
         if (isSubmitting) return;
         setIsSubmitting(true);
         if (timerRef.current) clearInterval(timerRef.current);
 
         const token = localStorage.getItem("token");
         const payload = {
-            answers: buildPayloadAnswers()
+            answers: Object.keys(answers).map(questionId => ({
+                questionId,
+                answerText: answers[questionId]
+            }))
         };
 
         try {
@@ -139,6 +90,48 @@ const TakeExam = () => {
             console.error("Lỗi nộp bài:", err);
             alert("Lỗi kết nối máy chủ khi nộp bài.");
             setIsSubmitting(false);
+        }
+    }, [answers, id, isSubmitting, navigate]);
+
+    // Timer countdown logic
+    useEffect(() => {
+        if (timeLeft <= 0 && exam && !isSubmitting) {
+            const autoSubmitTimer = window.setTimeout(() => {
+                alert("Hết giờ làm bài! Hệ thống đang tự động nộp bài của bạn.");
+                submitExamAnswers();
+            }, 0);
+            return () => window.clearTimeout(autoSubmitTimer);
+        }
+
+        if (exam) {
+            timerRef.current = setInterval(() => {
+                setTimeLeft(prev => prev - 1);
+            }, 1000);
+        }
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [timeLeft, exam, isSubmitting, submitExamAnswers]);
+
+    const handleAnswerChange = (questionId, value) => {
+        setAnswers(prev => ({
+            ...prev,
+            [questionId]: value
+        }));
+    };
+
+    const formatTime = (seconds) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const handleSubmitClick = (e) => {
+        e.preventDefault();
+        if (window.confirm("Bạn có chắc chắn muốn nộp bài thi này không?")) {
+            submitExamAnswers();
         }
     };
 
@@ -245,13 +238,13 @@ const TakeExam = () => {
                     ) : (
                         // Reading/Listening: Multiple choices or input fields
                         <div className="space-y-8">
-                            {exam.sections.map((section, sIdx) => (
+                            {exam.sections.map((section) => (
                                 <div key={section.id} className="space-y-6">
                                     {section.questions.map((question) => {
-                                        let qData = {};
+                                        let qData;
                                         try {
-                                            qData = JSON.parse(question.ContentJson);
-                                        } catch (e) {
+                                            qData = JSON.parse(question.contentJson);
+                                        } catch {
                                             qData = { text: "Câu hỏi bị lỗi cấu trúc dữ liệu." };
                                         }
 
@@ -259,7 +252,7 @@ const TakeExam = () => {
                                             <div key={question.id} className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-4">
                                                 <div className="flex items-start gap-3">
                                                     <span className="bg-violet-600 text-white font-black text-xs px-2.5 py-1 rounded-lg">
-                                                        Câu {question.QuestionNumber}
+                                                        Câu {question.questionNumber}
                                                     </span>
                                                     <p className="text-slate-200 text-sm font-semibold leading-relaxed">
                                                         {qData.text}

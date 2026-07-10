@@ -4,6 +4,20 @@
 
 @layer base {
   body {
-    @apply bg-[#0b1326] text-[#dae2fd] antialiased min-h-screen flex flex-col overflow-x-hidden;
+    @apply bg-[#080d1b] text-[#dae2fd] antialiased min-h-screen flex flex-col overflow-x-hidden;
+    font-family: "Inter", sans-serif;
   }
+
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }

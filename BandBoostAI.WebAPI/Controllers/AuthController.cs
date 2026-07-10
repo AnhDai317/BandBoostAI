@@ -60,8 +60,10 @@ public class AuthController : ControllerBase
     public IActionResult GetMe()
     {
         // Bóc tách thông tin từ Token (Claims) mà không cần gọi Database
-        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value
+            ?? User.FindFirst(ClaimTypes.Email)?.Value;
         var fullName = User.FindFirst("FullName")?.Value;
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
 

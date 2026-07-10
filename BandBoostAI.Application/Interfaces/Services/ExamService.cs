@@ -58,15 +58,46 @@ public class ExamService : IExamService
         return result.Id;
     }
 
-    public async Task<Exam?> GetExamByIdAsync(Guid id)
+    public async Task<ExamResponseDto?> GetExamByIdAsync(Guid id)
     {
-        return await _examRepository.GetExamWithDetailsAsync(id);
+        var exam = await _examRepository.GetExamWithDetailsAsync(id);
+        return exam is null ? null : MapExam(exam, includeDetails: true);
     }
 
-    public async Task<IReadOnlyList<Exam>> GetAllExamsAsync()
+    public async Task<IReadOnlyList<ExamResponseDto>> GetAllExamsAsync()
     {
-        return await _examRepository.GetAllAsync();
+        var exams = await _examRepository.GetAllAsync();
+        return exams.Select(exam => MapExam(exam, includeDetails: false)).ToList();
     }
+
+    private static ExamResponseDto MapExam(Exam exam, bool includeDetails) => new()
+    {
+        Id = exam.Id,
+        Title = exam.Title,
+        Description = exam.Description,
+        Category = exam.Category,
+        DurationInMinutes = exam.DurationInMinutes,
+        IsPremium = exam.IsPremium,
+        Sections = includeDetails
+            ? exam.Sections.OrderBy(section => section.OrderIndex).Select(section => new ExamSectionResponseDto
+            {
+                Id = section.Id,
+                ExamId = section.ExamId,
+                Title = section.Title,
+                SharedContent = section.SharedContent,
+                OrderIndex = section.OrderIndex,
+                Questions = section.Questions.OrderBy(question => question.QuestionNumber).Select(question => new QuestionResponseDto
+                {
+                    Id = question.Id,
+                    ExamSectionId = question.ExamSectionId,
+                    Type = question.Type,
+                    QuestionNumber = question.QuestionNumber,
+                    ContentJson = question.ContentJson,
+                    Explanation = question.Explanation
+                }).ToList()
+            }).ToList()
+            : []
+    };
 
     public async Task<ExamAttemptResponseDto> SubmitExamAsync(Guid examId, Guid userId, SubmitExamDto dto)
     {
