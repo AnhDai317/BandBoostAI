@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
+    const startPath = localStorage.getItem("token") ? "/dashboard" : "/register";
     return (
         <div className="min-h-screen bg-surface">
             {/* TopAppBar */}
@@ -11,15 +12,15 @@ const Home = () => {
                         <span className="font-display-md text-headline-md font-bold text-secondary">BandBoost AI</span>
                     </div>
                     <nav className="hidden md:flex items-center gap-lg">
-                        <a className="text-secondary font-bold border-b-2 border-secondary pb-1 font-label-caps text-label-caps" href="#">Dashboard</a>
-                        <a className="text-on-surface-variant hover:text-on-surface transition-colors duration-300 font-label-caps text-label-caps" href="#">Practice Tests</a>
-                        <a className="text-on-surface-variant hover:text-on-surface transition-colors duration-300 font-label-caps text-label-caps" href="#">AI Feedback</a>
+                        <Link className="text-secondary font-bold border-b-2 border-secondary pb-1 font-label-caps text-label-caps" to={startPath}>Dashboard</Link>
+                        <Link className="text-on-surface-variant hover:text-on-surface transition-colors duration-300 font-label-caps text-label-caps" to={startPath}>Practice Tests</Link>
+                        <Link className="text-on-surface-variant hover:text-on-surface transition-colors duration-300 font-label-caps text-label-caps" to={startPath}>AI Feedback</Link>
                         <a className="text-on-surface-variant hover:text-on-surface transition-colors duration-300 font-label-caps text-label-caps" href="#">Vocabulary</a>
                         <a className="text-on-surface-variant hover:text-on-surface transition-colors duration-300 font-label-caps text-label-caps" href="#">Simulations</a>
                     </nav>
                     <div className="flex items-center gap-md">
-                        {/* Chuyển hướng người dùng sang trang Register khi bấm nút */}
-                        <Link to="/register" className="hidden lg:flex items-center px-lg py-sm bg-primary-container text-on-primary-container rounded-full font-bold active:scale-95 transition-transform duration-200">
+                        {/* Chuyển hướng người dùng sang trang Register/Dashboard khi bấm nút */}
+                        <Link to={startPath} className="hidden lg:flex items-center px-lg py-sm bg-primary-container text-on-primary-container rounded-full font-bold active:scale-95 transition-transform duration-200">
                             Start Exam
                         </Link>
                         <div className="w-10 h-10 rounded-full border border-outline-variant p-0.5">
@@ -46,7 +47,7 @@ const Home = () => {
                                 BandBoost AI cung cấp lộ trình luyện thi chuẩn học thuật, tích hợp công nghệ phân tích chuyên sâu giúp bạn đánh giá năng lực chính xác và tối ưu điểm số hiệu quả.
                             </p>
                             <div className="flex flex-wrap gap-md">
-                                <Link to="/register" className="px-xl py-md bg-secondary text-on-secondary-fixed rounded-xl font-bold text-lg hover:bg-secondary/90 shadow-md transition-all">
+                                <Link to={startPath} className="px-xl py-md bg-secondary text-on-secondary-fixed rounded-xl font-bold text-lg hover:bg-secondary/90 shadow-md transition-all">
                                     Bắt đầu học ngay
                                 </Link>
                                 <button className="px-xl py-md bg-surface-container border border-outline-variant text-on-surface rounded-xl font-bold text-lg hover:bg-surface-container-high transition-all flex items-center gap-sm shadow-sm">
@@ -142,7 +143,7 @@ const Home = () => {
                             Bắt đầu với bài đánh giá năng lực toàn diện và nhận lộ trình học tập được thiết kế riêng cho bạn.
                         </p>
                         <div className="z-10 flex gap-md">
-                            <Link to="/register" className="px-xl py-md bg-primary text-on-primary-fixed rounded-full font-bold text-lg hover:bg-primary/90 shadow-md transition-all">
+                            <Link to={startPath} className="px-xl py-md bg-primary text-on-primary-fixed rounded-full font-bold text-lg hover:bg-primary/90 shadow-md transition-all">
                                 Làm bài test đầu vào
                             </Link>
                         </div>

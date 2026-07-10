@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ExamSection> ExamSections => Set<ExamSection>();
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<AiEvaluation> AiEvaluations => Set<AiEvaluation>();
+    public DbSet<ExamAttempt> ExamAttempts => Set<ExamAttempt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<ExamSection>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Question>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<AiEvaluation>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<ExamAttempt>().HasQueryFilter(e => !e.IsDeleted);
 
         // 2. Ép kiểu cột FeedbackJson của AI lưu trữ chuỗi không giới hạn
         modelBuilder.Entity<AiEvaluation>()

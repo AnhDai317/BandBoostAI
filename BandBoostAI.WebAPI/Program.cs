@@ -15,6 +15,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ITokenProvider, JwtTokenProvider>(); // Đăng ký Provider
 builder.Services.AddScoped<IUserRepository, UserRepository>();    
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IExamRepository, ExamRepository>();
+builder.Services.AddScoped<IExamService, ExamService>();
+builder.Services.AddScoped<IExamAttemptRepository, ExamAttemptRepository>();
 builder.Services.AddHttpClient(); // Cho phép ứng dụng tạo các cuộc gọi HTTP ra internet
 builder.Services.AddScoped<IAiScoringService, AiScoringService>();
 // Add services to the container.
@@ -59,6 +62,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.MapControllers();
+
+// Tự động Seed dữ liệu đề thi mẫu
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await DbSeeder.SeedAsync(context);
+}
 
 var summaries = new[]
 {
